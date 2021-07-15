@@ -11,13 +11,13 @@ var roomNames = []string{
 	"2.312",
 }
 
-var user *UntisAPI.User
-var rooms map[int]UntisAPI.Room
-var teachers map[int]UntisAPI.Teacher
-var classes map[int]UntisAPI.Class
-var subjects map[int]UntisAPI.Subject
-var periodsList map[int]map[int]UntisAPI.Period
-var roomMapper map[string]int
+var user *UntisAPI.User                         // user information to login to the UntisAPI
+var rooms map[int]UntisAPI.Room                 // maps room id to a Untis Room object
+var teachers map[int]UntisAPI.Teacher           // maps teachre id to Untis Teacher object
+var classes map[int]UntisAPI.Class              // maps classe id to Untis class object
+var subjects map[int]UntisAPI.Subject           // maps subject id to Untis subject object
+var periodsList map[int]map[int]UntisAPI.Period // room id to map of periods
+var roomMapper map[string]int                   // maps room names to room ids
 
 const periodEventTypeLessonBegin = 1
 const periodEventTypeLessonEnd = 2
@@ -30,14 +30,17 @@ type periodEvent struct {
 	time      int
 }
 
-var periodEvents map[int]periodEvent
+var periodEvents map[int]map[int]periodEvent // [room id][untis time]
 
 func main() {
+	/*
+		login to Untis
+	*/
 	user = UntisAPI.NewUser(
-		"maarten8",
-		//"Dummy2",
-		"behn500",
-		//"TBZ2020!x",
+		//"maarten8",
+		"niklas351",
+		//"behn500",
+		"C1oben",
 		"TBZ Mitte Bremen",
 		"https://tipo.webuntis.com")
 
@@ -50,6 +53,9 @@ func main() {
 	}
 	fmt.Printf("\rLogged in!\n")
 
+	/*
+		saves basic information about rooms into rooms map
+	*/
 	fmt.Printf("Loading rooms...")
 	rooms, err = user.GetRooms()
 	if err != nil {
@@ -58,6 +64,9 @@ func main() {
 	}
 	fmt.Printf("\rLoaded rooms.\n")
 
+	/*
+		saves basic information about teachers into teachers map
+	*/
 	fmt.Printf("Loading teachers...")
 	teachers, err = user.GetTeachers()
 	if err != nil {
@@ -67,6 +76,9 @@ func main() {
 		fmt.Printf("\rLoaded teachers.\n")
 	}
 
+	/*
+		saves basic information about classes into classes map
+	*/
 	fmt.Printf("Loading classes...")
 	classes, err = user.GetClasses()
 	if err != nil {
@@ -76,6 +88,9 @@ func main() {
 		fmt.Printf("\rLoaded classes.\n")
 	}
 
+	/*
+		saves basic information about subjects into subjects map
+	*/
 	fmt.Printf("Loading subjects...")
 	subjects, err = user.GetSubjectes()
 	if err != nil {
@@ -84,10 +99,6 @@ func main() {
 	} else {
 		fmt.Printf("\rLoaded subjects.\n")
 	}
-
-	fmt.Printf("Loading date...")
-	date := UntisAPI.ToUntisDate(time.Now())
-	fmt.Printf("\rToday is the: %d\n", date)
 
 	fmt.Printf("Mapping rooms...\r")
 	roomMapper = map[string]int{}
@@ -108,6 +119,13 @@ func main() {
 			fmt.Printf("Room %s not found!\nSkipping room.\n", usedRoom)
 		}
 	}
+
+	/*
+	   saves the periods of the current day of every room into the periods List map
+	*/
+	fmt.Printf("Loading date...")
+	date := UntisAPI.ToUntisDate(time.Now())
+	fmt.Printf("\rToday is the: %d\n", date)
 
 	fmt.Printf("Loading periods...\r")
 	periodsList = map[int]map[int]UntisAPI.Period{}
@@ -130,4 +148,13 @@ func main() {
 
 	fmt.Printf("Initi done.\n")
 
+}
+
+func getCurentHour(room int) UntisAPI.Period {
+	for _, period := range periodsList[room] {
+		if period.StartTime < UntisAPI.ToUnitsTime(time.Now()) && period.EndTime > UntisAPI.ToUnitsTime(time.Now()) {
+			return nil, period
+		}
+	}
+	return
 }
