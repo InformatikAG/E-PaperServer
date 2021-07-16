@@ -60,26 +60,7 @@ type periodLessonEvent struct {
 var periodEvents map[int]map[int]IperiodEvent // [room id][untis time]
 
 func main() {
-	// read file
-	data, err := ioutil.ReadFile("./config.json")
-	if err != nil {
-		fmt.Print(err)
-	}
-	// json data
-	var config userConfig
-	// unmarshall it
-	err = json.Unmarshal(data, &config)
-	if err != nil {
-		fmt.Println("error:", err)
-	}
-
-	user = UntisAPI.NewUser(
-		config.USERNAME,
-		config.PASSWORD,
-		config.SCHOOL,
-		config.SERVER,
-	)
-
+	getConfiguration()
 	getAPIData()
 	getTimeTables()
 	updateEvents()
@@ -100,6 +81,28 @@ func getCurentEvent(room string, time int) (event IperiodEvent) {
 		}
 	}
 	return event
+}
+
+func getConfiguration() {
+	// read file
+	data, err := ioutil.ReadFile("./config.json")
+	if err != nil {
+		fmt.Print(err)
+	}
+	// json data
+	var config userConfig
+	// unmarshall it
+	err = json.Unmarshal(data, &config)
+	if err != nil {
+		fmt.Println("error:", err)
+	}
+
+	user = UntisAPI.NewUser(
+		config.USERNAME,
+		config.PASSWORD,
+		config.SCHOOL,
+		config.SERVER,
+	)
 }
 
 func getAPIData() {
