@@ -2,7 +2,9 @@ package main
 
 import (
 	"UntisAPI"
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"strconv"
 	"time"
 )
@@ -25,6 +27,13 @@ const periodEventTypeRecess = 2
 const periodEventTypeDayBegin = 3
 const periodEventTypeDayEnd = 4
 const periodEventTypeMax = 4
+
+type userConfig struct {
+	USERNAME string
+	PASSWORD string
+	SCHOOL   string
+	SERVER   string
+}
 
 type IperiodEvent interface {
 	getType() int
@@ -51,19 +60,54 @@ type periodLessonEvent struct {
 var periodEvents map[int]map[int]IperiodEvent // [room id][untis time]
 
 func main() {
+	// read file
+	data, err := ioutil.ReadFile("./config.json")
+	if err != nil {
+		fmt.Print(err)
+	}
+	// json data
+	var config userConfig
+	// unmarshall it
+	err = json.Unmarshal(data, &config)
+	if err != nil {
+		fmt.Println("error:", err)
+	}
+
+	user = UntisAPI.NewUser(
+		config.USERNAME,
+		config.PASSWORD,
+		config.SCHOOL,
+		config.SERVER,
+	)
+
+	getAPIData()
+	getTimeTables()
+	updateEvents()
+	fmt.Printf("Initi done.\n")
+
+	fmt.Print(getCurentEvent("2.312", 1200))
+}
+
+func getCurentEvent(room string, time int) (event IperiodEvent) {
+	/*
+		finds the newest event in the past.
+	*/
+	for t, period := range periodEvents[roomMapper[room]] {
+		if t < time {
+			event = period
+		} else {
+			break
+		}
+	}
+	return event
+}
+
+func getAPIData() {
 	/*
 		login to Untis
 	*/
-	user = UntisAPI.NewUser(
-		//"maarten8",
-		"niklas351",
-		//"behn500",
-		"C1oben",
-		"TBZ Mitte Bremen",
-		"https://tipo.webuntis.com")
-
 	fmt.Printf("Logging in...")
-	//time.Sleep(time.Second)
+	defer user.Logout()
 	err := user.Login()
 	if err != nil {
 		fmt.Printf("\rLogin failed! error: %s\n", err.Error())
@@ -81,6 +125,26 @@ func main() {
 		return
 	}
 	fmt.Printf("\rLoaded rooms.\n")
+
+	fmt.Printf("Mapping rooms...\r")
+	roomMapper = map[string]int{}
+	for _, usedRoom := range roomNames {
+		found := false
+		var room UntisAPI.Room
+		for i, _ := range rooms {
+			if rooms[i].Name == usedRoom {
+				found = true
+				room = rooms[i]
+			}
+		}
+		if found {
+			roomMapper[usedRoom] = room.Id
+			fmt.Printf("Room %s has id %d \n", room.Name, room.Id)
+		} else {
+			roomMapper[usedRoom] = -1
+			fmt.Printf("Room %s not found!\nSkipping room.\n", usedRoom)
+		}
+	}
 
 	/*
 		saves basic information about teachers into teachers map
@@ -118,25 +182,17 @@ func main() {
 		fmt.Printf("\rLoaded subjects.\n")
 	}
 
-	fmt.Printf("Mapping rooms...\r")
-	roomMapper = map[string]int{}
-	for _, usedRoom := range roomNames {
-		found := false
-		var room UntisAPI.Room
-		for i, _ := range rooms {
-			if rooms[i].Name == usedRoom {
-				found = true
-				room = rooms[i]
-			}
-		}
-		if found {
-			roomMapper[usedRoom] = room.Id
-			fmt.Printf("Room %s has id %d \n", room.Name, room.Id)
-		} else {
-			roomMapper[usedRoom] = -1
-			fmt.Printf("Room %s not found!\nSkipping room.\n", usedRoom)
-		}
+}
+
+func getTimeTables() {
+	fmt.Printf("Logging in...")
+	defer user.Logout()
+	err := user.Login()
+	if err != nil {
+		fmt.Printf("\rLogin failed! error: %s\n", err.Error())
+		return
 	}
+	fmt.Printf("\rLogged in!\n")
 
 	/*
 	   saves the periods of the current day of every room into the periods List map
@@ -156,7 +212,9 @@ func main() {
 			fmt.Printf("Loading periodsList of roomId %d\n", id)
 		}
 	}
+}
 
+func updateEvents() {
 	/*
 		Create the lesson events
 	*/
@@ -209,22 +267,4 @@ func main() {
 		}
 	}
 	fmt.Printf("Created event list.\n")
-
-	fmt.Printf("Initi done.\n")
-
-	fmt.Print(getCurentEvent("2.312", 1200))
-}
-
-func getCurentEvent(room string, time int) (event IperiodEvent) {
-	/*
-		finds the newest event in the past.
-	*/
-	for t, period := range periodEvents[roomMapper[room]] {
-		if t < time {
-			event = period
-		} else {
-			break
-		}
-	}
-	return event
 }
