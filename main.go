@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"strconv"
 	"time"
 )
 
@@ -232,8 +231,8 @@ func updateEvents() {
 						time:      period.StartTime,
 					},
 					room:      name, // TODO how does untis save room changes
-					startTime: strconv.Itoa(period.StartTime),
-					endTime:   strconv.Itoa(period.EndTime),
+					startTime: UntisAPI.ToGoTime(period.StartTime).Format("15:04"),
+					endTime:   UntisAPI.ToGoTime(period.EndTime).Format("15:04"),
 				}
 				for _, id := range period.Teacher { // adds all teachers to the event
 					event.teachers += teachers[id].Name + "; "
