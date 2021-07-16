@@ -212,6 +212,19 @@ func main() {
 
 	fmt.Printf("Initi done.\n")
 
-	goThroughDay()
+	fmt.Print(getCurentEvent("2.312", 1200))
+}
 
+func getCurentEvent(room string, time int) (event IperiodEvent) {
+	/*
+		finds the newest event in the past.
+	*/
+	for t, period := range periodEvents[roomMapper[room]] {
+		if t < time {
+			event = period
+		} else {
+			break
+		}
+	}
+	return event
 }
