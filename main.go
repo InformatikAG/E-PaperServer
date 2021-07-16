@@ -3,6 +3,7 @@ package main
 import (
 	"UntisAPI"
 	"fmt"
+	"strconv"
 	"time"
 )
 
@@ -19,18 +20,35 @@ var subjects map[int]UntisAPI.Subject           // maps subject id to Untis subj
 var periodsList map[int]map[int]UntisAPI.Period // room id to map of periods
 var roomMapper map[string]int                   // maps room names to room ids
 
-const periodEventTypeLessonBegin = 1
-const periodEventTypeLessonEnd = 2
+const periodEventTypeLesson = 1
+const periodEventTypeRecess = 2
 const periodEventTypeDayBegin = 3
 const periodEventTypeDayEnd = 4
 const periodEventTypeMax = 4
+
+type IperiodEvent interface {
+	getType() int
+}
 
 type periodEvent struct {
 	eventType int
 	time      int
 }
 
-var periodEvents map[int]map[int]periodEvent // [room id][untis time]
+func (p periodEvent) getType() int {
+	return p.eventType
+}
+
+type periodLessonEvent struct {
+	periodEvent
+	room      string
+	teachers  string
+	class     string
+	startTime string
+	endTime   string
+}
+
+var periodEvents map[int]map[int]IperiodEvent // [room id][untis time]
 
 func main() {
 	/*
@@ -140,21 +158,58 @@ func main() {
 	}
 
 	/*
-		fmt.Printf("Creating events...\r")
-		for id, _ := range periodsList {
-			currentTime := 0
-		}
+		Create the lesson events
 	*/
+	periodEvents = map[int]map[int]IperiodEvent{}
+	for name, id := range roomMapper {
+		if id != -1 {
+			periodEvents[id] = map[int]IperiodEvent{}
+			for _, period := range periodsList[id] {
+				event := periodLessonEvent{
+					periodEvent: periodEvent{
+						eventType: periodEventTypeLesson,
+						time:      period.StartTime,
+					},
+					room:      name, // TODO how dos untis save room changes
+					startTime: strconv.Itoa(period.StartTime),
+					endTime:   strconv.Itoa(period.EndTime),
+				}
+				for _, id := range period.Teacher { // adds all teachers to the event
+					event.teachers += teachers[id].Name + "; "
+				}
+				for _, id := range period.Classes { // adds all classes to the event
+					event.class += classes[id].Name + "; "
+				}
+				periodEvents[id][event.time] = event
+			}
+		}
+	}
+	/*
+		Merge lessons so lessons are not split up in 45 min chunks
+	*/
+	for id, room := range periodEvents {
+		var old = periodLessonEvent{}
+		for _, event := range room {
+			if old.getType() == periodEventTypeLesson {
+				if event.getType() == periodEventTypeLesson {
+					lessonEvent := event.(periodLessonEvent)
+					// TODO use untis time grid to check time between events
+					// checking if two lessons are the same
+					if lessonEvent.room == old.room && lessonEvent.class == old.class && lessonEvent.teachers == old.teachers {
+						delete(periodEvents[id], lessonEvent.time)
+						old.endTime = lessonEvent.endTime
+						periodEvents[id][old.time] = old
+					} else {
+						old = event.(periodLessonEvent)
+					}
+				}
+			} else {
+				old = event.(periodLessonEvent)
+			}
+		}
+	}
+	fmt.Printf("Created event list.\n")
 
 	fmt.Printf("Initi done.\n")
 
-}
-
-func getCurentHour(room int) UntisAPI.Period {
-	for _, period := range periodsList[room] {
-		if period.StartTime < UntisAPI.ToUnitsTime(time.Now()) && period.EndTime > UntisAPI.ToUnitsTime(time.Now()) {
-			return nil, period
-		}
-	}
-	return
 }
