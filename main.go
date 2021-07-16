@@ -170,7 +170,7 @@ func main() {
 						eventType: periodEventTypeLesson,
 						time:      period.StartTime,
 					},
-					room:      name, // TODO how dos untis save room changes
+					room:      name, // TODO how does untis save room changes
 					startTime: strconv.Itoa(period.StartTime),
 					endTime:   strconv.Itoa(period.EndTime),
 				}
@@ -211,5 +211,7 @@ func main() {
 	fmt.Printf("Created event list.\n")
 
 	fmt.Printf("Initi done.\n")
+
+	goThroughDay()
 
 }
