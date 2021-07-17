@@ -15,8 +15,8 @@ var roomNames = []string{
 
 var user *UntisAPI.User                         // user information to login to the UntisAPI
 var rooms map[int]UntisAPI.Room                 // maps room id to a Untis Room object
-var teachers map[int]UntisAPI.Teacher           // maps teachre id to Untis Teacher object
-var classes map[int]UntisAPI.Class              // maps classe id to Untis class object
+var teachers map[int]UntisAPI.Teacher           // maps teacher id to Untis Teacher object
+var classes map[int]UntisAPI.Class              // maps class id to Untis class object
 var subjects map[int]UntisAPI.Subject           // maps subject id to Untis subject object
 var periodsList map[int]map[int]UntisAPI.Period // room id to map of periods
 var roomMapper map[string]int                   // maps room names to room ids
@@ -34,7 +34,7 @@ type userConfig struct {
 	SERVER   string
 }
 
-type IperiodEvent interface {
+type IPeriodEvent interface {
 	getType() int
 }
 
@@ -57,7 +57,7 @@ type periodLessonEvent struct {
 	endTime   string
 }
 
-var periodEvents map[int]map[int]IperiodEvent // [room id][untis time]
+var periodEvents map[int]map[int]IPeriodEvent // [room id][untis time]
 
 func main() {
 	getConfiguration()
@@ -66,21 +66,22 @@ func main() {
 	updateEvents()
 	fmt.Printf("Initi done.\n")
 
-	fmt.Print(getCurentEvent("2.312", 1200))
+	fmt.Print(getCurrentEvent("2.312", 1200))
 }
 
-func getCurentEvent(room string, time int) (event IperiodEvent) {
+func getCurrentEvent(room string, searchTime int) (event IPeriodEvent, secondsTillNextEvent int) {
 	/*
 		finds the newest event in the past.
 	*/
 	for t, period := range periodEvents[roomMapper[room]] {
-		if t < time {
+		if t < searchTime {
 			event = period
 		} else {
+			secondsTillNextEvent = int(UntisAPI.ToGoTime(t).Sub(time.Now()).Seconds())
 			break
 		}
 	}
-	return event
+	return event, secondsTillNextEvent
 }
 
 func getConfiguration() {
@@ -221,10 +222,10 @@ func updateEvents() {
 	/*
 		Create the lesson events
 	*/
-	periodEvents = map[int]map[int]IperiodEvent{}
+	periodEvents = map[int]map[int]IPeriodEvent{}
 	for name, id := range roomMapper {
 		if id != -1 {
-			periodEvents[id] = map[int]IperiodEvent{}
+			periodEvents[id] = map[int]IPeriodEvent{}
 			for _, period := range periodsList[id] {
 				event := periodLessonEvent{
 					periodEvent: periodEvent{
