@@ -176,7 +176,7 @@ func getAPIData() {
 		saves basic information about subjects into subjects map
 	*/
 	fmt.Printf("Loading subjects...")
-	subjects, err = user.GetSubjectes()
+	subjects, err = user.GetSubjects()
 	if err != nil {
 		fmt.Printf("\rLoading subjects failed! error: %s\n", err.Error())
 		fmt.Printf("Skipping subjects.\n")
