@@ -52,6 +52,7 @@ type periodLessonEvent struct {
 	room      string
 	teachers  string
 	class     string
+	subject   string
 	startTime string
 	endTime   string
 }
@@ -133,7 +134,7 @@ func getAPIData() {
 	for _, usedRoom := range roomNames {
 		found := false
 		var room UntisAPI.Room
-		for i, _ := range rooms {
+		for i := range rooms {
 			if rooms[i].Name == usedRoom {
 				found = true
 				room = rooms[i]
@@ -239,6 +240,9 @@ func updateEvents() {
 				}
 				for _, id := range period.Classes { // adds all classes to the event
 					event.class += classes[id].Name + "; "
+				}
+				for _, id := range period.Subject { // adds all Subjects to the event
+					event.class += subjects[id].Name + "; "
 				}
 				periodEvents[id][event.time] = event
 			}
