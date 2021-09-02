@@ -1,9 +1,9 @@
 package main
 
 import (
-	"UntisAPI"
 	"encoding/json"
 	"fmt"
+	"github.com/Stroby241/UnitsAPI"
 	"io/ioutil"
 	"time"
 )
@@ -64,17 +64,18 @@ func main() {
 	getAPIData()
 	getTimeTables()
 	updateEvents()
-	fmt.Printf("Initi done.\n")
+	fmt.Printf("Init done.\n")
 
-	fmt.Print(getCurrentEvent("2.312", 1200))
+	fmt.Print(UntisAPI.ToUnitsTime(time.Now()))
+	fmt.Print(getCurrentEvent("2.312"))
 }
 
-func getCurrentEvent(room string, searchTime int) (event IPeriodEvent, secondsTillNextEvent int) {
+func getCurrentEvent(room string) (event IPeriodEvent, secondsTillNextEvent int) {
 	/*
 		finds the newest event in the past.
 	*/
 	for t, period := range periodEvents[roomMapper[room]] {
-		if t < searchTime {
+		if t < int(UntisAPI.ToUnitsTime(time.Now())) {
 			event = period
 		} else {
 			secondsTillNextEvent = int(UntisAPI.ToGoTime(t).Sub(time.Now()).Seconds())
